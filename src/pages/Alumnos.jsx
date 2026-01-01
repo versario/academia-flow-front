@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { fetchAlumnos, createAlumno, updateAlumno, deleteAlumno } from '../api/alumnosApi';
 
 export default function Alumnos() {
   const [search, setSearch] = useState('');
@@ -30,43 +31,40 @@ export default function Alumnos() {
 
   const queryClient = useQueryClient();
 
-  const { data: alumnos = [], isLoading } = useQuery({
-    queryKey: ['alumnos'],
-    queryFn: () => base44.entities.Alumno.list()
+ const { data: alumnos = [], isLoading } = useQuery({
+    queryKey: ['alumnos', search],
+    queryFn: () => fetchAlumnos(search),
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Alumno.create(data),
+    mutationFn: createAlumno,
     onSuccess: () => {
       queryClient.invalidateQueries(['alumnos']);
       setFormOpen(false);
       toast.success('Alumno creado exitosamente');
     },
-    onError: () => {
-      toast.error('Error al crear alumno');
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Alumno.update(id, data),
+    mutationFn: ({ id, data }) => updateAlumno(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['alumnos']);
       setFormOpen(false);
       setSelectedAlumno(null);
       toast.success('Alumno actualizado exitosamente');
     },
-    onError: () => {
-      toast.error('Error al actualizar alumno');
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await base44.functions.invoke('deleteAlumno', { alumnoId: id });
-      if (response.data.error) {
-        throw new Error(response.data.error);
-      }
-      return response.data;
+      await deleteAlumno(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['alumnos']);
@@ -75,7 +73,6 @@ export default function Alumnos() {
       toast.success('Alumno eliminado exitosamente');
     },
     onError: (error) => {
-      setDeleteDialogOpen(false);
       toast.error(error.message);
     }
   });

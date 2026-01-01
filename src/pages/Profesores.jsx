@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { fetchProfesores } from '../api/profesoresApi';
+import { fetchProfesores, createProfesor, updateProfesor, deleteProfesor } from '../api/profesoresApi';
 
 export default function Profesores() {
   const [search, setSearch] = useState('');
@@ -38,37 +38,33 @@ export default function Profesores() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Profesor.create(data),
+    mutationFn: createProfesor,
     onSuccess: () => {
       queryClient.invalidateQueries(['profesores']);
       setFormOpen(false);
       toast.success('Profesor creado exitosamente');
     },
-    onError: () => {
-      toast.error('Error al crear profesor');
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Profesor.update(id, data),
+    mutationFn: ({ id, data }) => updateProfesor(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['profesores']);
       setFormOpen(false);
       setSelectedProfesor(null);
       toast.success('Profesor actualizado exitosamente');
     },
-    onError: () => {
-      toast.error('Error al actualizar profesor');
+    onError: (error) => {
+      toast.error(error.message);
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await base44.functions.invoke('deleteProfesor', { profesorId: id });
-      if (response.data.error) {
-        throw new Error(response.data.error);
-      }
-      return response.data;
+      await deleteProfesor(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['profesores']);
@@ -77,10 +73,10 @@ export default function Profesores() {
       toast.success('Profesor eliminado exitosamente');
     },
     onError: (error) => {
-      setDeleteDialogOpen(false);
       toast.error(error.message);
     }
   });
+
 
   const handleSave = (data) => {
     if (selectedProfesor) {

@@ -1,9 +1,9 @@
 import { academiaflowClient } from './academiaFlowClient';
 import { extractErrorMessage } from './apiError';
 
-export const fetchProfesores = async (search) => {
+export const fetchAlumnos = async (search) => {
   try {
-    const response = await academiaflowClient.get('/profesores', {
+    const response = await academiaflowClient.get('/alumnos', {
       params: {
         search: search || undefined,
       },
@@ -14,27 +14,27 @@ export const fetchProfesores = async (search) => {
   }
 };
 
-export const createProfesor = async (data) => {
+export const createAlumno = async (data) => {
   try {
-    const response = await academiaflowClient.post('/profesores', data);
+    const response = await academiaflowClient.post('/alumnos', data);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const updateProfesor = async (id, data) => {
+export const updateAlumno = async (id, data) => {
   try {
-    const response = await academiaflowClient.put(`/profesores/${id}`, data);
+    const response = await academiaflowClient.put(`/alumnos/${id}`, data);
     return response.data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
 };
 
-export const deleteProfesor = async (id) => {
+export const deleteAlumno = async (id) => {
   try {
-    await academiaflowClient.delete(`/profesores/${id}`);
+    await academiaflowClient.delete(`/alumnos/${id}`);
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
