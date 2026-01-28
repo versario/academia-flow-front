@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
+import { fetchProfesores } from '@/api/profesoresApi';
+import { fetchProfesorAsignaturas } from '@/api/profesorAsignaturasApi';
+
 export default function AsignarProfesorDialog({ asignatura, open, onClose, onSave, isLoading }) {
   const [selectedProfesorId, setSelectedProfesorId] = useState('');
   const [profesorPopoverOpen, setProfesorPopoverOpen] = useState(false);
@@ -16,12 +18,12 @@ export default function AsignarProfesorDialog({ asignatura, open, onClose, onSav
 
   const { data: profesores = [] } = useQuery({
     queryKey: ['profesores'],
-    queryFn: () => base44.entities.Profesor.list()
+    queryFn: fetchProfesores
   });
 
   const { data: asignaciones = [] } = useQuery({
-    queryKey: ['profesor-asignatura', asignatura?.id],
-    queryFn: () => base44.entities.ProfesorAsignatura.list(),
+    queryKey: ['profesor-asignaturas'],
+    queryFn: fetchProfesorAsignaturas,
     enabled: !!asignatura
   });
 

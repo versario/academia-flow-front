@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { fetchAsignaturas, createAsignatura, updateAsignatura, deleteAsignatura} from '../api/asignaturasApi';
+import { fetchProfesorAsignaturas, createProfesorAsignatura, deleteProfesorAsignatura } from '../api/profesorAsignaturasApi';
+import { fetchProfesores } from '../api/profesoresApi';
+
 export default function Asignaturas() {
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
@@ -42,59 +46,58 @@ export default function Asignaturas() {
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState(null);
   const [searchProfesores, setSearchProfesores] = useState('');
 
+
   const queryClient = useQueryClient();
 
   const { data: asignaturas = [], isLoading } = useQuery({
-    queryKey: ['asignaturas'],
-    queryFn: () => base44.entities.Asignatura.list()
+    queryKey: ['asignaturas', search],
+    queryFn: () => fetchAsignaturas(search),
+    placeholderData: keepPreviousData,
   });
 
   const { data: profesores = [] } = useQuery({
     queryKey: ['profesores'],
-    queryFn: () => base44.entities.Profesor.list()
+    queryFn: () => fetchProfesores(),
   });
 
   const { data: asignaciones = [] } = useQuery({
-    queryKey: ['profesor-asignatura'],
-    queryFn: () => base44.entities.ProfesorAsignatura.list()
+    queryKey: ['profesor-asignaturas'],
+    queryFn: fetchProfesorAsignaturas,
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Asignatura.create(data),
+    mutationFn: createAsignatura,
     onSuccess: () => {
       queryClient.invalidateQueries(['asignaturas']);
       setFormOpen(false);
       toast.success('Asignatura creada exitosamente');
     },
-    onError: () => {
-      toast.error('Error al crear asignatura');
-    }
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
 
+
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Asignatura.update(id, data),
+    mutationFn: ({ id, data }) => updateAsignatura(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['asignaturas']);
       setFormOpen(false);
       setSelectedAsignatura(null);
       toast.success('Asignatura actualizada exitosamente');
     },
-    onError: () => {
-      toast.error('Error al actualizar asignatura');
-    }
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
 
+
   const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const response = await base44.functions.invoke('deleteAsignatura', { asignaturaId: id });
-      if (response.data.error) {
-        throw new Error(response.data.error);
-      }
-      return response.data;
-    },
+    mutationFn: deleteAsignatura,
     onSuccess: () => {
       queryClient.invalidateQueries(['asignaturas']);
-      queryClient.invalidateQueries(['profesor-asignatura']);
+      queryClient.invalidateQueries(['profesor-asignaturas']);
       setDeleteDialogOpen(false);
       setAsignaturaToDelete(null);
       toast.success('Asignatura eliminada exitosamente');
@@ -102,13 +105,14 @@ export default function Asignaturas() {
     onError: (error) => {
       setDeleteDialogOpen(false);
       toast.error(error.message);
-    }
+    },
   });
 
+
   const asignarProfesorMutation = useMutation({
-    mutationFn: (data) => base44.entities.ProfesorAsignatura.create(data),
+    mutationFn: (data) => createProfesorAsignatura(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(['profesor-asignatura']);
+      queryClient.invalidateQueries(['profesor-asignaturas']);
       setAsignarProfesorOpen(false);
       toast.success('Profesor asignado exitosamente');
     },
@@ -118,9 +122,9 @@ export default function Asignaturas() {
   });
 
   const desasignarProfesorMutation = useMutation({
-    mutationFn: (id) => base44.entities.ProfesorAsignatura.delete(id),
+    mutationFn: (id) => deleteProfesorAsignatura(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['profesor-asignatura']);
+      queryClient.invalidateQueries(['profesor-asignaturas']);
       toast.success('Profesor desasignado exitosamente');
     },
     onError: () => {
